@@ -31,6 +31,7 @@
 - [x] Add settings UI hint for HTTP-only proxy support.
 - [x] Change default HUD font size to 15.
 - [x] Add self-contained Windows publish output.
+- [x] Add GitHub Actions workflow for automatic Windows exe artifacts.
 - [ ] Run live smoke test with microphone.
 - [ ] Run live smoke test with WASAPI loopback.
 - [ ] Add DPAPI/Credential Manager storage for API key.
