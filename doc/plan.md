@@ -26,6 +26,8 @@
 - [x] Replace per-chunk audio send tasks with a bounded realtime queue.
 - [x] Coalesce high-frequency subtitle updates before touching WPF text.
 - [x] Rebuild, republish, and commit latency fix.
+- [x] Diagnose no-subtitle regression from sender loop startup timing.
+- [x] Move audio sender startup after Gemini setup and publish fix.
 - [ ] Run live smoke test with microphone.
 - [ ] Run live smoke test with WASAPI loopback.
 - [ ] Add DPAPI/Credential Manager storage for API key.

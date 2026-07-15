@@ -98,12 +98,16 @@ public sealed class GeminiLiveClient : IAsyncDisposable
                     if (sessionId != _sessionId) return;
                     _socket = socket;
                     ClearAudioQueue();
-                    _senderTask = Task.Run(() => SendAudioLoopAsync(socket, sessionId, token), token);
                 }
 
                 await socket.ConnectAsync(BuildUri(options), token);
                 await SendSetupAsync(socket, options, token);
                 await WaitForSetupAsync(socket, sessionId, token);
+                lock (_gate)
+                {
+                    if (sessionId != _sessionId) return;
+                    _senderTask = Task.Run(() => SendAudioLoopAsync(socket, sessionId, token), token);
+                }
                 Connected?.Invoke(sessionId);
                 reconnectDelay = TimeSpan.FromSeconds(1);
                 await ReceiveLoopAsync(socket, sessionId, token);
