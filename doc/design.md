@@ -87,3 +87,9 @@ Publish:
 ```powershell
 dotnet publish .\GeminiLiveTranslate\GeminiLiveTranslate.csproj -c Release -r win-x64 --self-contained false
 ```
+
+Self-contained publish, for machines without a separately installed .NET Desktop Runtime:
+
+```powershell
+dotnet publish .\GeminiLiveTranslate\GeminiLiveTranslate.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```

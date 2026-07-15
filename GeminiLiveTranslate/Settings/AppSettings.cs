@@ -8,7 +8,7 @@ public sealed class AppSettings
     public string TargetLanguage { get; set; } = "zh-CN";
     public string AudioSource { get; set; } = "system";
     public int AudioDeviceNumber { get; set; } = -1;
-    public int FontSize { get; set; } = 18;
+    public int FontSize { get; set; } = 15;
     public double BackgroundOpacity { get; set; } = 0.72;
     public bool EchoTargetLanguage { get; set; }
     public double PlaybackVolume { get; set; } = 0.8;

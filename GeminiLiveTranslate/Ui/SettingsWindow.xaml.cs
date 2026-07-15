@@ -44,7 +44,7 @@ public partial class SettingsWindow : Window
         _settings.EchoTargetLanguage = EchoBox.IsChecked == true;
         _settings.ShowOriginal = ShowOriginalBox.IsChecked == true;
         _settings.PlaybackVolume = double.TryParse(VolumeBox.Text, out var volume) ? volume : 0.8;
-        _settings.FontSize = int.TryParse(FontSizeBox.Text, out var size) ? size : 18;
+        _settings.FontSize = int.TryParse(FontSizeBox.Text, out var size) ? size : 15;
         _settings.BackgroundOpacity = double.TryParse(OpacityBox.Text, out var opacity) ? opacity : 0.72;
         _settings.SystemPrompt = PromptBox.Text;
         _settings.Normalize();
