@@ -32,6 +32,7 @@
 - [x] Change default HUD font size to 15.
 - [x] Add self-contained Windows publish output.
 - [x] Add GitHub Actions workflow for automatic Windows exe artifacts.
+- [x] Create GitHub Release automatically when pushing version tags.
 - [ ] Run live smoke test with microphone.
 - [ ] Run live smoke test with WASAPI loopback.
 - [ ] Add DPAPI/Credential Manager storage for API key.
