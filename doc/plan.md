@@ -22,6 +22,10 @@
 - [x] Implement rolling upper/lower subtitle tracks.
 - [x] Make the HUD body draggable, excluding interactive controls.
 - [x] Rebuild and republish after HUD fixes.
+- [x] Diagnose growing subtitle latency.
+- [x] Replace per-chunk audio send tasks with a bounded realtime queue.
+- [x] Coalesce high-frequency subtitle updates before touching WPF text.
+- [x] Rebuild, republish, and commit latency fix.
 - [ ] Run live smoke test with microphone.
 - [ ] Run live smoke test with WASAPI loopback.
 - [ ] Add DPAPI/Credential Manager storage for API key.

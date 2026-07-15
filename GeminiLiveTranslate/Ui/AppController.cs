@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Windows.Threading;
 using System.Windows;
 using System.Windows.Forms;
 using GeminiLiveTranslate.Audio;
@@ -18,6 +19,12 @@ public sealed class AppController : IDisposable
     private readonly AudioCaptureService _capture;
     private readonly AudioPlaybackService _player;
     private NotifyIcon? _tray;
+    private readonly DispatcherTimer _subtitleTimer;
+    private readonly object _subtitleGate = new();
+    private string _pendingInput = "";
+    private string _pendingOutput = "";
+    private bool _hasPendingInput;
+    private bool _hasPendingOutput;
     private bool _running;
     private int _activeSessionId;
 
@@ -35,6 +42,11 @@ public sealed class AppController : IDisposable
         _gemini = gemini;
         _capture = capture;
         _player = player;
+        _subtitleTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(180)
+        };
+        _subtitleTimer.Tick += (_, _) => FlushSubtitleUpdates();
         WireEvents();
     }
 
@@ -70,11 +82,11 @@ public sealed class AppController : IDisposable
 
         _gemini.InputTranscript += (sessionId, text) => OnUi(() =>
         {
-            if (sessionId == _activeSessionId) _hud.SetInput(text);
+            if (sessionId == _activeSessionId) QueueSubtitleUpdate(input: text, output: null);
         });
         _gemini.OutputTranscript += (sessionId, text) => OnUi(() =>
         {
-            if (sessionId == _activeSessionId) _hud.SetOutput(text);
+            if (sessionId == _activeSessionId) QueueSubtitleUpdate(input: null, output: text);
         });
         _gemini.AudioReceived += (sessionId, data) =>
         {
@@ -121,6 +133,7 @@ public sealed class AppController : IDisposable
         }
 
         if (_settings.EchoTargetLanguage) _player.Start(_settings.PlaybackVolume);
+        ClearPendingSubtitles();
         _hud.ClearTranscripts();
         _activeSessionId = _gemini.Start(new GeminiSessionOptions(
             _settings.ApiKey,
@@ -151,6 +164,7 @@ public sealed class AppController : IDisposable
     private void Stop()
     {
         _running = false;
+        ClearPendingSubtitles();
         _capture.Stop();
         _player.Stop();
         _gemini.Stop();
@@ -194,6 +208,60 @@ public sealed class AppController : IDisposable
         var dispatcher = Application.Current.Dispatcher;
         if (dispatcher.CheckAccess()) action();
         else dispatcher.BeginInvoke(action);
+    }
+
+    private void QueueSubtitleUpdate(string? input, string? output)
+    {
+        lock (_subtitleGate)
+        {
+            if (input is not null)
+            {
+                _pendingInput = input;
+                _hasPendingInput = true;
+            }
+            if (output is not null)
+            {
+                _pendingOutput = output;
+                _hasPendingOutput = true;
+            }
+        }
+
+        if (!_subtitleTimer.IsEnabled) _subtitleTimer.Start();
+    }
+
+    private void FlushSubtitleUpdates()
+    {
+        string input;
+        string output;
+        bool hasInput;
+        bool hasOutput;
+        lock (_subtitleGate)
+        {
+            input = _pendingInput;
+            output = _pendingOutput;
+            hasInput = _hasPendingInput;
+            hasOutput = _hasPendingOutput;
+            _pendingInput = "";
+            _pendingOutput = "";
+            _hasPendingInput = false;
+            _hasPendingOutput = false;
+        }
+
+        if (hasOutput) _hud.SetOutput(output);
+        if (hasInput) _hud.SetInput(input);
+        if (!hasInput && !hasOutput) _subtitleTimer.Stop();
+    }
+
+    private void ClearPendingSubtitles()
+    {
+        lock (_subtitleGate)
+        {
+            _pendingInput = "";
+            _pendingOutput = "";
+            _hasPendingInput = false;
+            _hasPendingOutput = false;
+        }
+        _subtitleTimer.Stop();
     }
 
     public void Dispose()

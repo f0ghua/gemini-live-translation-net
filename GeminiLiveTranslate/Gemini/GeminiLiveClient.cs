@@ -1,4 +1,5 @@
 using System.Buffers.Text;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Net.WebSockets;
@@ -9,11 +10,13 @@ namespace GeminiLiveTranslate.Gemini;
 
 public sealed class GeminiLiveClient : IAsyncDisposable
 {
-    private const int MaxPendingSends = 20;
+    private const int MaxQueuedAudioChunks = 6;
     private readonly object _gate = new();
+    private readonly SemaphoreSlim _audioSignal = new(0);
+    private readonly ConcurrentQueue<byte[]> _audioQueue = new();
     private ClientWebSocket? _socket;
     private CancellationTokenSource? _sessionCts;
-    private int _pendingSends;
+    private Task? _senderTask;
     private int _sessionId;
 
     public event Action<int, string>? InputTranscript;
@@ -36,7 +39,7 @@ public sealed class GeminiLiveClient : IAsyncDisposable
             _sessionCts = cts;
             _sessionId++;
             sessionId = _sessionId;
-            _pendingSends = 0;
+            ClearAudioQueue();
             DroppedChunks = 0;
         }
 
@@ -54,7 +57,7 @@ public sealed class GeminiLiveClient : IAsyncDisposable
             socket = _socket;
             _sessionCts = null;
             _socket = null;
-            _pendingSends = 0;
+            ClearAudioQueue();
         }
 
         try { cts?.Cancel(); } catch { }
@@ -65,54 +68,20 @@ public sealed class GeminiLiveClient : IAsyncDisposable
     public void SendAudio(byte[] pcm16, int sessionId)
     {
         if (pcm16.Length == 0) return;
-        ClientWebSocket? socket;
-        CancellationToken token;
         lock (_gate)
         {
             if (sessionId != _sessionId || _sessionCts is null || _socket is null) return;
-            socket = _socket;
-            token = _sessionCts.Token;
-            if (socket.State != WebSocketState.Open) return;
-            if (_pendingSends >= MaxPendingSends)
+            if (_socket.State != WebSocketState.Open) return;
+            _audioQueue.Enqueue(pcm16);
+            while (_audioQueue.Count > MaxQueuedAudioChunks)
             {
+                _audioQueue.TryDequeue(out _);
                 DroppedChunks++;
-                StatsChanged?.Invoke(sessionId, _pendingSends, DroppedChunks);
-                return;
             }
-            _pendingSends++;
+            StatsChanged?.Invoke(sessionId, _audioQueue.Count, DroppedChunks);
         }
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                var payload = Convert.ToBase64String(pcm16);
-                var json = JsonSerializer.Serialize(new
-                {
-                    realtimeInput = new
-                    {
-                        audio = new
-                        {
-                            data = payload,
-                            mimeType = "audio/pcm;rate=16000"
-                        }
-                    }
-                });
-                await socket.SendAsync(Encoding.UTF8.GetBytes(json), WebSocketMessageType.Text, true, token);
-            }
-            catch (Exception ex)
-            {
-                StatusChanged?.Invoke(sessionId, "error", $"Audio send failed: {ex.Message}");
-            }
-            finally
-            {
-                lock (_gate)
-                {
-                    if (_pendingSends > 0) _pendingSends--;
-                    StatsChanged?.Invoke(sessionId, _pendingSends, DroppedChunks);
-                }
-            }
-        }, token);
+        _audioSignal.Release();
     }
 
     private async Task RunSessionAsync(int sessionId, GeminiSessionOptions options, CancellationToken token)
@@ -128,6 +97,8 @@ public sealed class GeminiLiveClient : IAsyncDisposable
                 {
                     if (sessionId != _sessionId) return;
                     _socket = socket;
+                    ClearAudioQueue();
+                    _senderTask = Task.Run(() => SendAudioLoopAsync(socket, sessionId, token), token);
                 }
 
                 await socket.ConnectAsync(BuildUri(options), token);
@@ -147,6 +118,7 @@ public sealed class GeminiLiveClient : IAsyncDisposable
                 lock (_gate)
                 {
                     if (sessionId == _sessionId) _socket = null;
+                    ClearAudioQueue();
                 }
                 await Task.Delay(reconnectDelay, token).ContinueWith(_ => { }, CancellationToken.None);
                 reconnectDelay = TimeSpan.FromSeconds(Math.Min(reconnectDelay.TotalSeconds * 2, 30));
@@ -157,6 +129,49 @@ public sealed class GeminiLiveClient : IAsyncDisposable
         }
 
         Disconnected?.Invoke(sessionId, token.IsCancellationRequested ? "" : "Session ended");
+    }
+
+    private async Task SendAudioLoopAsync(ClientWebSocket socket, int sessionId, CancellationToken token)
+    {
+        while (!token.IsCancellationRequested && socket.State == WebSocketState.Open)
+        {
+            try
+            {
+                await _audioSignal.WaitAsync(token);
+                while (_audioQueue.TryDequeue(out var pcm16))
+                {
+                    var payload = Convert.ToBase64String(pcm16);
+                    var json = JsonSerializer.Serialize(new
+                    {
+                        realtimeInput = new
+                        {
+                            audio = new
+                            {
+                                data = payload,
+                                mimeType = "audio/pcm;rate=16000"
+                            }
+                        }
+                    });
+                    await socket.SendAsync(Encoding.UTF8.GetBytes(json), WebSocketMessageType.Text, true, token);
+                    StatsChanged?.Invoke(sessionId, _audioQueue.Count, DroppedChunks);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                StatusChanged?.Invoke(sessionId, "warning", $"Audio send delayed: {ex.Message}");
+                await Task.Delay(150, token).ContinueWith(_ => { }, CancellationToken.None);
+            }
+        }
+    }
+
+    private void ClearAudioQueue()
+    {
+        while (_audioQueue.TryDequeue(out _)) { }
+        while (_audioSignal.CurrentCount > 0 && _audioSignal.Wait(0)) { }
     }
 
     private static ClientWebSocket CreateSocket(GeminiSessionOptions options)
