@@ -1,0 +1,11 @@
+<Application x:Class="GeminiLiveTranslate.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
+  <Application.Resources>
+    <SolidColorBrush x:Key="AccentBrush" Color="#4CC9F0" />
+    <SolidColorBrush x:Key="PanelBrush" Color="#CC111827" />
+    <SolidColorBrush x:Key="TextBrush" Color="#F8FAFC" />
+    <SolidColorBrush x:Key="MutedTextBrush" Color="#CBD5E1" />
+  </Application.Resources>
+</Application>

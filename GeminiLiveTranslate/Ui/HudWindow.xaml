@@ -1,0 +1,45 @@
+<Window x:Class="GeminiLiveTranslate.Ui.HudWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Gemini Live Translate"
+        Width="780"
+        Height="190"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ResizeMode="CanResizeWithGrip"
+        Topmost="True"
+        Background="Transparent">
+  <Border x:Name="RootPanel" CornerRadius="8" Padding="14" Background="{StaticResource PanelBrush}" MouseLeftButtonDown="RootPanel_OnMouseLeftButtonDown">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <DockPanel MouseLeftButtonDown="DragBar_OnMouseLeftButtonDown">
+        <Ellipse x:Name="StatusDot" Width="10" Height="10" Fill="#64748B" Margin="0,0,8,0" />
+        <TextBlock x:Name="StatusText" Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" Text="Idle" />
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+          <Button x:Name="ToggleButton" Width="72" Height="28" Margin="8,0,0,0" Content="Start" Click="ToggleButton_OnClick" />
+          <Button Width="72" Height="28" Margin="8,0,0,0" Content="Settings" Click="SettingsButton_OnClick" />
+          <Button Width="32" Height="28" Margin="8,0,0,0" Content="X" Click="ExitButton_OnClick" />
+        </StackPanel>
+      </DockPanel>
+      <Grid Grid.Row="1" Margin="0,12,0,8">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <ScrollViewer x:Name="OutputScroll" Grid.Row="0" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+          <TextBlock x:Name="OutputText" Text="Ready" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" FontSize="22" FontWeight="SemiBold" />
+        </ScrollViewer>
+        <Border x:Name="LaneDivider" Grid.Row="1" Height="1" Background="#334155" Margin="0,8" />
+        <ScrollViewer x:Name="InputScroll" Grid.Row="2" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+          <TextBlock x:Name="InputText" Text="" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" FontSize="14" />
+        </ScrollViewer>
+      </Grid>
+      <TextBlock x:Name="StatsText" Grid.Row="2" Foreground="{StaticResource MutedTextBrush}" FontSize="12" Text="Pending: 0 / Dropped: 0" />
+    </Grid>
+  </Border>
+</Window>
