@@ -64,6 +64,7 @@ Responsibilities:
 - Resampling uses linear interpolation. This is buildable and low-cost, but not final quality.
 - Audio device selection is minimal: default system loopback or microphone device number.
 - No installer; publish output is the first distribution unit.
+- Proxy settings currently use .NET `WebProxy`, so the settings UI treats `host:port` as HTTP proxy syntax. SOCKS proxy support is not implemented yet.
 
 ## Build
 

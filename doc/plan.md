@@ -28,6 +28,7 @@
 - [x] Rebuild, republish, and commit latency fix.
 - [x] Diagnose no-subtitle regression from sender loop startup timing.
 - [x] Move audio sender startup after Gemini setup and publish fix.
+- [x] Add settings UI hint for HTTP-only proxy support.
 - [ ] Run live smoke test with microphone.
 - [ ] Run live smoke test with WASAPI loopback.
 - [ ] Add DPAPI/Credential Manager storage for API key.

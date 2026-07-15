@@ -21,6 +21,11 @@
 
         <TextBlock Text="Proxy URL" />
         <TextBox x:Name="ProxyBox" Margin="0,4,0,12" />
+        <TextBlock Text="HTTP proxy only. Example: http://127.0.0.1:7890. Host:port is treated as HTTP. SOCKS is not supported yet."
+                   Foreground="#64748B"
+                   TextWrapping="Wrap"
+                   FontSize="12"
+                   Margin="0,-8,0,12" />
 
         <TextBlock Text="Model" />
         <TextBox x:Name="ModelBox" Margin="0,4,0,12" />
