@@ -5,7 +5,7 @@ namespace GeminiLiveTranslate.Audio;
 
 public sealed class AudioCaptureService : IDisposable
 {
-    private const int ChunkSize = 3200;
+    private const int ChunkSize = 6400;
     private IWaveIn? _capture;
     private Pcm16Chunker? _chunker;
 
